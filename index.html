@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vextract — Image to Text</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --teal: #1abf8f; --teal-dark: #0f8f68; --black: #111111; --card: #1e1e1e; --border: #2e2e2e; --text: #f0f0f0; --muted: #888; --white: #ffffff; --orange: #f5a623; --orange-dim: #2a1a0e; --orange-border: #f5a62344; }
+    html { scroll-behavior: smooth; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--black); color: var(--text); min-height: 100vh; }
+
+    /* NAV */
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--black); z-index: 100; flex-wrap: wrap; gap: 10px; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; }
+    .nav-logo img { width: 32px; height: 32px; object-fit: contain; }
+    .nav-logo span { font-size: 18px; font-weight: 600; color: var(--white); letter-spacing: -0.3px; }
+    .nav-logo span b { color: var(--teal); }
+    .nav-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .nav-badge { font-size: 11px; background: #1a3a2e; color: var(--teal); padding: 3px 10px; border-radius: 20px; border: 1px solid #1abf8f44; }
+    .nav-hw-btn { font-size: 12px; background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 5px 14px; border-radius: 20px; cursor: pointer; font-family: inherit; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+    .nav-hw-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* PAGES */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* HERO */
+    .hero { text-align: center; padding: 5rem 2rem 3rem; max-width: 700px; margin: 0 auto; }
+    .hero-tag { display: inline-block; font-size: 12px; background: #1a3a2e; color: var(--teal); padding: 4px 14px; border-radius: 20px; border: 1px solid #1abf8f44; margin-bottom: 1.5rem; letter-spacing: 0.5px; }
+    .hero h1 { font-size: clamp(32px, 6vw, 48px); font-weight: 700; line-height: 1.1; margin-bottom: 1rem; letter-spacing: -1px; }
+    .hero h1 span { color: var(--teal); }
+    .hero p { font-size: 17px; color: var(--muted); line-height: 1.7; max-width: 500px; margin: 0 auto 2rem; }
+    .hero-stats { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3rem; }
+    .stat { text-align: center; }
+    .stat-num { font-size: 22px; font-weight: 700; color: var(--teal); }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; max-width: 700px; margin: 0 auto 4rem; }
+    @media(max-width:500px){ .features { grid-template-columns: 1fr; } }
+    .feature { background: var(--card); padding: 1.25rem; }
+    .feature i { font-size: 20px; color: var(--teal); margin-bottom: 0.5rem; display: block; }
+    .feature h3 { font-size: 14px; font-weight: 600; color: var(--white); margin-bottom: 4px; }
+    .feature p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* TOOL */
+    .tool-section { max-width: 680px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+    .section-label { font-size: 12px; color: var(--teal); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 1rem; font-weight: 600; }
+
+    /* INPUT TABS */
+    .input-tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .itab { font-size: 13px; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .itab.active { border-color: var(--teal); color: var(--teal); background: #1a3a2e; }
+    .itab.hw-tab.active { border-color: var(--orange); color: var(--orange); background: var(--orange-dim); }
+
+    /* ZONES */
+    .upload-zone { border: 1.5px dashed var(--border); border-radius: 12px; padding: 2.5rem 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s; margin-bottom: 1rem; background: var(--card); }
+    .upload-zone:hover { border-color: var(--teal); }
+    .upload-zone.hw { border-color: var(--orange-border); }
+    .upload-zone.hw:hover { border-color: var(--orange); }
+    .upload-zone i { font-size: 36px; color: var(--teal); margin-bottom: 0.75rem; display: block; }
+    .upload-zone.hw i { color: var(--orange); }
+    .upload-zone p { font-size: 15px; color: var(--text); margin-bottom: 4px; font-weight: 500; }
+    .upload-zone span { font-size: 13px; color: var(--muted); }
+    .paste-zone { border: 1.5px dashed var(--border); border-radius: 12px; padding: 2.5rem 2rem; text-align: center; background: var(--card); margin-bottom: 1rem; cursor: text; transition: border-color 0.2s; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; outline: none; }
+    .paste-zone:focus, .paste-zone.drag-over { border-color: var(--teal); }
+    .paste-zone.hw:focus, .paste-zone.hw.drag-over { border-color: var(--orange); }
+    .paste-zone.hw { border-color: var(--orange-border); }
+    .paste-zone i { font-size: 32px; color: var(--teal); }
+    .paste-zone.hw i { color: var(--orange); }
+    .paste-zone p { font-size: 15px; color: var(--text); font-weight: 500; }
+    .paste-zone span { font-size: 13px; color: var(--muted); }
+    .mobile-zone { border: 1.5px dashed var(--border); border-radius: 12px; padding: 2.5rem 2rem; text-align: center; background: var(--card); margin-bottom: 1rem; cursor: pointer; transition: border-color 0.2s; }
+    .mobile-zone:hover { border-color: var(--teal); }
+    .mobile-zone.hw { border-color: var(--orange-border); }
+    .mobile-zone.hw:hover { border-color: var(--orange); }
+    .mobile-zone i { font-size: 36px; color: var(--teal); margin-bottom: 0.75rem; display: block; }
+    .mobile-zone.hw i { color: var(--orange); }
+    .mobile-zone p { font-size: 15px; color: var(--text); font-weight: 500; margin-bottom: 4px; }
+    .mobile-zone span { font-size: 13px; color: var(--muted); }
+    #file-input, #file-input-hw, #mobile-input, #mobile-input-hw { display: none; }
+
+    /* PREVIEW */
+    .preview-area { display: none; margin-bottom: 1rem; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+    .preview-area img { width: 100%; max-height: 300px; object-fit: contain; background: #141414; display: block; }
+    .preview-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 1rem; background: var(--card); border-top: 1px solid var(--border); }
+    .preview-bar span { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+
+    /* BTNS */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 14px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn:hover { border-color: var(--teal); color: var(--teal); }
+    .btn-primary { background: var(--teal); color: #000; border-color: transparent; width: 100%; justify-content: center; padding: 0.85rem; font-size: 15px; font-weight: 600; margin-bottom: 1rem; border-radius: 10px; }
+    .btn-primary:hover { background: var(--teal-dark); color: #000; }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-hw { background: var(--orange); color: #000; border-color: transparent; width: 100%; justify-content: center; padding: 0.85rem; font-size: 15px; font-weight: 600; margin-bottom: 1rem; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-family: inherit; border: none; transition: opacity 0.15s; }
+    .btn-hw:hover { opacity: 0.85; }
+    .btn-hw:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* PROGRESS */
+    .progress-bar { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 1rem; overflow: hidden; display: none; }
+    .progress-fill { height: 100%; background: var(--teal); width: 0%; transition: width 0.3s; border-radius: 2px; }
+    .progress-bar.hw .progress-fill { background: var(--orange); }
+    .status { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 1rem; min-height: 18px; }
+
+    /* RESULTS */
+    .result-box { display: none; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
+    .result-header { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: var(--card); border-bottom: 1px solid var(--border); }
+    .result-header span { font-size: 14px; font-weight: 500; }
+    .result-header.hw span { color: var(--orange); }
+    .result-box textarea { width: 100%; min-height: 160px; padding: 1rem; font-size: 14px; line-height: 1.7; font-family: inherit; color: var(--text); background: #141414; border: none; resize: vertical; outline: none; }
+
+    /* HW PAGE SPECIFIC */
+    .hw-hero { text-align: center; padding: 4rem 2rem 2.5rem; max-width: 700px; margin: 0 auto; }
+    .hw-tag { display: inline-block; font-size: 12px; background: var(--orange-dim); color: var(--orange); padding: 4px 14px; border-radius: 20px; border: 1px solid var(--orange-border); margin-bottom: 1.5rem; }
+    .hw-hero h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 700; line-height: 1.1; margin-bottom: 1rem; letter-spacing: -1px; }
+    .hw-hero h1 span { color: var(--orange); }
+    .hw-hero p { font-size: 16px; color: var(--muted); line-height: 1.7; max-width: 480px; margin: 0 auto; }
+    .hw-tool { max-width: 680px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+    .hw-section-label { font-size: 12px; color: var(--orange); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 1rem; font-weight: 600; }
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); background: transparent; border: none; cursor: pointer; font-family: inherit; padding: 0; margin-bottom: 1.5rem; transition: color 0.15s; }
+    .back-btn:hover { color: var(--text); }
+
+    /* API KEY CARD */
+
+    /* USAGE */
+    .usage-bar-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+    .usage-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .usage-top span { font-size: 13px; color: var(--muted); }
+    .usage-top strong { font-size: 13px; color: var(--orange); }
+    .usage-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .usage-fill { height: 100%; background: var(--orange); border-radius: 3px; transition: width 0.4s; }
+    .usage-note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .limit-warning { background: var(--orange-dim); border: 1px solid var(--orange-border); border-radius: 10px; padding: 1rem; text-align: center; font-size: 14px; color: var(--orange); display: none; margin-bottom: 1rem; }
+
+    /* PIPELINE STEPS */
+    .pipeline { display: flex; align-items: center; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .pipe-step { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; }
+    .pipe-step.active { color: var(--orange); border-color: var(--orange-border); background: var(--orange-dim); }
+    .pipe-step.done { color: var(--teal); border-color: #1abf8f44; background: #1a3a2e; }
+    .pipe-arrow { color: var(--border); font-size: 14px; }
+
+    /* INPUT PANELS */
+    .input-panel { display: none; }
+    .input-panel.active { display: block; }
+    .hw-input-panel { display: none; }
+    .hw-input-panel.active { display: block; }
+
+    /* DINO */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+    .dino-section { max-width: 680px; margin: 0 auto; padding: 0 1.5rem 5rem; }
+    .dino-score-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .dino-label { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    #dino-score { font-size: 13px; color: var(--teal); font-weight: 600; }
+    #dino-canvas { width: 100%; height: 180px; background: #141414; border: 1px solid var(--border); border-radius: 12px; display: block; cursor: pointer; }
+    .dino-hint { text-align: center; font-size: 12px; color: var(--muted); margin-top: 0.5rem; }
+
+    footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; }
+    footer p { font-size: 13px; color: var(--muted); }
+    footer span { color: var(--teal); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo" onclick="showPage('main')">
+    <img src="logo.png" alt="Vextract" onerror="this.style.display='none'">
+    <span>V<b>extract</b></span>
+  </div>
+  <div class="nav-right">
+    <span class="nav-badge" id="nav-badge">100% free · no AI</span>
+    <button class="nav-hw-btn" id="nav-hw-btn" onclick="showPage('handwriting')">
+      <i class="ti ti-pencil" aria-hidden="true"></i> Handwriting mode
+    </button>
+  </div>
+</nav>
+
+<!-- ── MAIN PAGE ── -->
+<div class="page active" id="page-main">
+  <section class="hero">
+    <div class="hero-tag">OCR · Optical Character Recognition</div>
+    <h1>Turn any image<br>into <span>editable text</span></h1>
+    <p>Upload a photo, screenshot, or scan — Vextract reads the text instantly. Runs entirely in your browser. No account, no limits, no cost.</p>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Free forever</div></div>
+      <div class="stat"><div class="stat-num">∞</div><div class="stat-label">No usage limit</div></div>
+      <div class="stat"><div class="stat-num">0</div><div class="stat-label">Data uploaded</div></div>
+    </div>
+    <div class="features">
+      <div class="feature"><i class="ti ti-device-desktop-off"></i><h3>Works offline</h3><p>Runs entirely in your browser, no server needed.</p></div>
+      <div class="feature"><i class="ti ti-lock"></i><h3>Private</h3><p>Your images never leave your device.</p></div>
+      <div class="feature"><i class="ti ti-language"></i><h3>Multi-language</h3><p>Reads English and many other languages.</p></div>
+    </div>
+  </section>
+
+  <section class="tool-section">
+    <div class="section-label">Extract text</div>
+    <div class="input-tabs">
+      <button class="itab active" onclick="switchTab('upload','main',event)"><i class="ti ti-upload"></i> Upload file</button>
+      <button class="itab" onclick="switchTab('paste','main',event)"><i class="ti ti-clipboard"></i> Paste image</button>
+      <button class="itab" onclick="switchTab('mobile','main',event)"><i class="ti ti-device-mobile"></i> Use mobile</button>
+    </div>
+    <div class="input-panel active" id="main-panel-upload">
+      <div class="upload-zone" id="uz-main" onclick="document.getElementById('file-input').click()">
+        <i class="ti ti-photo-up"></i><p>Click or drag an image here</p><span>PNG, JPG, JPEG, WEBP, BMP supported</span>
+      </div>
+      <input type="file" id="file-input" accept="image/*">
+    </div>
+    <div class="input-panel" id="main-panel-paste">
+      <div class="paste-zone" id="pz-main" tabindex="0">
+        <i class="ti ti-clipboard-text"></i><p>Click here then press Ctrl+V / Cmd+V</p><span>Paste a screenshot or any copied image</span>
+      </div>
+    </div>
+    <div class="input-panel" id="main-panel-mobile">
+      <div class="mobile-zone" onclick="document.getElementById('mobile-input').click()">
+        <i class="ti ti-device-mobile"></i><p>Tap to open your gallery</p><span>Select a photo from your phone</span>
+      </div>
+      <input type="file" id="mobile-input" accept="image/*" capture="environment">
+    </div>
+    <div class="preview-area" id="preview-main">
+      <img id="preview-img-main" src="" alt="Preview">
+      <div class="preview-bar"><span id="file-name-main"></span><button class="btn" onclick="clearMain()"><i class="ti ti-x"></i> Remove</button></div>
+    </div>
+    <div class="progress-bar" id="prog-main"><div class="progress-fill" id="pf-main"></div></div>
+    <div class="status" id="status-main"></div>
+    <button class="btn btn-primary" id="extract-btn-main" onclick="extractMain()" disabled><i class="ti ti-text-recognition"></i> Extract text</button>
+    <div class="result-box" id="result-main">
+      <div class="result-header"><span>Extracted text</span><button class="btn" onclick="copyResult('result-text-main')"><i class="ti ti-copy"></i> Copy</button></div>
+      <textarea id="result-text-main" readonly placeholder="Your text will appear here..."></textarea>
+    </div>
+  </section>
+
+  <hr class="divider">
+  <section class="dino-section">
+    <div class="dino-score-row"><div class="dino-label">While you wait — play a game</div><span id="dino-score">Score: 0</span></div>
+    <canvas id="dino-canvas" width="680" height="180"></canvas>
+    <p class="dino-hint">Press Space or tap to jump · Double jump supported</p>
+  </section>
+  <footer><p>Made with Vextract · <span>No AI. No data. No limits.</span></p></footer>
+</div>
+
+<!-- ── HANDWRITING PAGE ── -->
+<div class="page" id="page-handwriting">
+  <div class="hw-hero">
+    <div class="hw-tag">OCR.space + Groq AI · Handwriting optimised</div>
+    <h1>Read &amp; fix your <span>handwriting</span></h1>
+    <p>OCR reads the raw text, then Groq AI corrects spelling and fills in missing letters — so messy notes come back clean.</p>
+  </div>
+
+  <div class="hw-tool">
+    <button class="back-btn" onclick="showPage('main')"><i class="ti ti-arrow-left"></i> Back to Vextract</button>
+    <!-- USAGE -->
+    <div class="usage-bar-wrap">
+      <div class="usage-top"><span>Daily usage</span><strong id="usage-text">0 / 10 used today</strong></div>
+      <div class="usage-track"><div class="usage-fill" id="usage-fill" style="width:0%"></div></div>
+      <div class="usage-note">Resets every day at midnight · 10 images per day</div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div class="pipeline">
+      <div class="pipe-step" id="pipe-1"><i class="ti ti-photo"></i> Image</div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" id="pipe-2"><i class="ti ti-scan"></i> OCR.space reads</div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" id="pipe-3"><i class="ti ti-sparkles"></i> Groq AI fixes</div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" id="pipe-4"><i class="ti ti-check"></i> Clean text</div>
+    </div>
+
+    <div class="hw-section-label">Upload handwriting</div>
+    <div class="input-tabs">
+      <button class="itab hw-tab active" onclick="switchTab('upload','hw',event)"><i class="ti ti-upload"></i> Upload file</button>
+      <button class="itab hw-tab" onclick="switchTab('paste','hw',event)"><i class="ti ti-clipboard"></i> Paste image</button>
+      <button class="itab hw-tab" onclick="switchTab('mobile','hw',event)"><i class="ti ti-device-mobile"></i> Use mobile</button>
+    </div>
+    <div class="hw-input-panel active" id="hw-panel-upload">
+      <div class="upload-zone hw" id="uz-hw" onclick="document.getElementById('file-input-hw').click()">
+        <i class="ti ti-photo-up"></i><p>Click or drag your handwritten image</p><span>PNG, JPG, JPEG, WEBP, BMP supported</span>
+      </div>
+      <input type="file" id="file-input-hw" accept="image/*">
+    </div>
+    <div class="hw-input-panel" id="hw-panel-paste">
+      <div class="paste-zone hw" id="pz-hw" tabindex="0">
+        <i class="ti ti-clipboard-text"></i><p>Click here then press Ctrl+V / Cmd+V</p><span>Paste a screenshot of your handwriting</span>
+      </div>
+    </div>
+    <div class="hw-input-panel" id="hw-panel-mobile">
+      <div class="mobile-zone hw" onclick="document.getElementById('mobile-input-hw').click()">
+        <i class="ti ti-device-mobile"></i><p>Tap to open your gallery</p><span>Select a photo of your handwriting</span>
+      </div>
+      <input type="file" id="mobile-input-hw" accept="image/*" capture="environment">
+    </div>
+
+    <div class="preview-area" id="preview-hw">
+      <img id="preview-img-hw" src="" alt="Preview">
+      <div class="preview-bar"><span id="file-name-hw"></span><button class="btn" onclick="clearHW()"><i class="ti ti-x"></i> Remove</button></div>
+    </div>
+
+    <div class="limit-warning" id="limit-warning">You've used all 10 images for today. Come back tomorrow!</div>
+
+    <div class="progress-bar hw" id="prog-hw"><div class="progress-fill" id="pf-hw"></div></div>
+    <div class="status" id="status-hw"></div>
+
+    <button class="btn-hw" id="extract-btn-hw" onclick="extractHW()" disabled><i class="ti ti-pencil"></i> Read &amp; fix handwriting</button>
+
+    <!-- RAW RESULT -->
+    <div class="result-box" id="result-hw-raw">
+      <div class="result-header"><span style="color:var(--muted)"><i class="ti ti-scan" style="vertical-align:-2px;margin-right:4px"></i>Raw OCR output</span><button class="btn" onclick="copyResult('result-text-hw-raw')"><i class="ti ti-copy"></i> Copy</button></div>
+      <textarea id="result-text-hw-raw" readonly placeholder="Raw OCR text will appear here..."></textarea>
+    </div>
+
+    <!-- AI FIXED RESULT -->
+    <div class="result-box" id="result-hw-ai">
+      <div class="result-header hw"><span><i class="ti ti-sparkles" style="vertical-align:-2px;margin-right:4px"></i>AI corrected text</span><button class="btn" onclick="copyResult('result-text-hw-ai')"><i class="ti ti-copy"></i> Copy</button></div>
+      <textarea id="result-text-hw-ai" readonly placeholder="AI corrected text will appear here..."></textarea>
+    </div>
+  </div>
+  <footer><p>Vextract Handwriting · <span>OCR.space + Groq AI</span></p></footer>
+</div>
+
+<script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+<script>
+const OCR_KEY = 'K82466008988957';
+const DAILY_LIMIT = 10;
+const GROQ_KEY = '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';
+
+// ── PAGE ──────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  window.scrollTo(0,0);
+  if(name === 'handwriting') {
+    updateUsageUI();
+    
+    document.getElementById('nav-badge').textContent = '10 imgs/day · OCR + AI';
+    document.getElementById('nav-hw-btn').innerHTML = '<i class="ti ti-scan"></i> Standard mode';
+    document.getElementById('nav-hw-btn').onclick = () => showPage('main');
+  } else {
+    document.getElementById('nav-badge').textContent = '100% free · no AI';
+    document.getElementById('nav-hw-btn').innerHTML = '<i class="ti ti-pencil"></i> Handwriting mode';
+    document.getElementById('nav-hw-btn').onclick = () => showPage('handwriting');
+  }
+}
+
+// ── TABS ──────────────────────────────────────────────────
+function switchTab(type, page, e) {
+  const prefix = page === 'main' ? 'main' : 'hw';
+  const panelClass = page === 'main' ? 'input-panel' : 'hw-input-panel';
+  const container = document.getElementById('page-' + (page === 'main' ? 'main' : 'handwriting'));
+  container.querySelectorAll('.' + panelClass).forEach(p => p.classList.remove('active'));
+  container.querySelectorAll('.itab').forEach(t => t.classList.remove('active'));
+  document.getElementById(prefix + '-panel-' + type).classList.add('active');
+  if(e && e.currentTarget) e.currentTarget.classList.add('active');
+  if(page === 'main') clearMain(true); else clearHW(true);
+}
+
+
+
+// ── USAGE ─────────────────────────────────────────────────
+function getUsage() {
+  const today = new Date().toDateString();
+  try { const d = JSON.parse(localStorage.getItem('ss_usage')); if(d && d.date === today) return d; } catch(e){}
+  return { date: today, count: 0 };
+}
+function incUsage() { const u = getUsage(); u.count++; localStorage.setItem('ss_usage', JSON.stringify(u)); updateUsageUI(); }
+function updateUsageUI() {
+  const u = getUsage();
+  const pct = Math.min((u.count / DAILY_LIMIT) * 100, 100);
+  document.getElementById('usage-text').textContent = u.count + ' / ' + DAILY_LIMIT + ' used today';
+  document.getElementById('usage-fill').style.width = pct + '%';
+  document.getElementById('limit-warning').style.display = u.count >= DAILY_LIMIT ? 'block' : 'none';
+  updateExtractBtn();
+}
+function updateExtractBtn() {
+  const u = getUsage();
+  const hasFile = !!hwFile;
+  document.getElementById('extract-btn-hw').disabled = !hasFile || u.count >= DAILY_LIMIT;
+}
+
+// ── PIPELINE UI ───────────────────────────────────────────
+function setPipe(step) {
+  ['pipe-1','pipe-2','pipe-3','pipe-4'].forEach((id,i) => {
+    document.getElementById(id).className = 'pipe-step' + (i+1 < step ? ' done' : i+1 === step ? ' active' : '');
+  });
+}
+
+// ── MAIN OCR (TESSERACT) ──────────────────────────────────
+let mainFile = null, hwFile = null;
+
+function handleMainFile(file) {
+  if(!file || !file.type.startsWith('image/')) return;
+  mainFile = file;
+  document.getElementById('preview-img-main').src = URL.createObjectURL(file);
+  document.getElementById('file-name-main').textContent = file.name || 'Pasted image';
+  document.getElementById('preview-main').style.display = 'block';
+  document.getElementById('extract-btn-main').disabled = false;
+  document.getElementById('status-main').textContent = '';
+  document.getElementById('result-main').style.display = 'none';
+}
+function clearMain(silent) {
+  mainFile = null;
+  document.getElementById('preview-main').style.display = 'none';
+  document.getElementById('extract-btn-main').disabled = true;
+  if(!silent) { document.getElementById('status-main').textContent = ''; document.getElementById('result-main').style.display = 'none'; }
+  document.getElementById('file-input').value = '';
+  document.getElementById('mobile-input').value = '';
+}
+async function extractMain() {
+  if(!mainFile) return;
+  const btn = document.getElementById('extract-btn-main');
+  btn.disabled = true;
+  document.getElementById('result-main').style.display = 'none';
+  document.getElementById('prog-main').style.display = 'block';
+  document.getElementById('pf-main').style.width = '0%';
+  document.getElementById('status-main').textContent = 'Reading your image...';
+  try {
+    const r = await Tesseract.recognize(mainFile, 'eng', { logger: m => { if(m.status==='recognizing text') document.getElementById('pf-main').style.width = Math.round(m.progress*100)+'%'; }});
+    const text = r.data.text.trim();
+    document.getElementById('pf-main').style.width = '100%';
+    if(text) { document.getElementById('result-text-main').value = text; document.getElementById('result-main').style.display = 'block'; document.getElementById('status-main').textContent = 'Done — '+text.split(/\s+/).length+' words extracted'; }
+    else { document.getElementById('status-main').textContent = 'No text found. Try Handwriting mode for messy images.'; }
+  } catch(e) { document.getElementById('status-main').textContent = 'Something went wrong. Please try again.'; }
+  document.getElementById('prog-main').style.display = 'none';
+  btn.disabled = false;
+}
+
+document.getElementById('file-input').addEventListener('change', e => { if(e.target.files[0]) handleMainFile(e.target.files[0]); });
+document.getElementById('mobile-input').addEventListener('change', e => { if(e.target.files[0]) handleMainFile(e.target.files[0]); });
+const uzMain = document.getElementById('uz-main');
+uzMain.addEventListener('dragover', e => { e.preventDefault(); uzMain.style.borderColor='var(--teal)'; });
+uzMain.addEventListener('dragleave', () => { uzMain.style.borderColor=''; });
+uzMain.addEventListener('drop', e => { e.preventDefault(); uzMain.style.borderColor=''; if(e.dataTransfer.files[0]) handleMainFile(e.dataTransfer.files[0]); });
+const pzMain = document.getElementById('pz-main');
+pzMain.addEventListener('click', () => pzMain.focus());
+pzMain.addEventListener('paste', e => { for(let i of e.clipboardData.items) { if(i.type.startsWith('image/')) { handleMainFile(i.getAsFile()); break; } }});
+pzMain.addEventListener('dragover', e => { e.preventDefault(); pzMain.classList.add('drag-over'); });
+pzMain.addEventListener('dragleave', () => pzMain.classList.remove('drag-over'));
+pzMain.addEventListener('drop', e => { e.preventDefault(); pzMain.classList.remove('drag-over'); if(e.dataTransfer.files[0]) handleMainFile(e.dataTransfer.files[0]); });
+
+// ── HANDWRITING (OCR.SPACE + GROQ) ───────────────────────
+function handleHWFile(file) {
+  if(!file || !file.type.startsWith('image/')) return;
+  hwFile = file;
+  document.getElementById('preview-img-hw').src = URL.createObjectURL(file);
+  document.getElementById('file-name-hw').textContent = file.name || 'Pasted image';
+  document.getElementById('preview-hw').style.display = 'block';
+  document.getElementById('status-hw').textContent = '';
+  document.getElementById('result-hw-raw').style.display = 'none';
+  document.getElementById('result-hw-ai').style.display = 'none';
+  setPipe(1);
+  updateExtractBtn();
+}
+function clearHW(silent) {
+  hwFile = null;
+  document.getElementById('preview-hw').style.display = 'none';
+  if(!silent) { document.getElementById('status-hw').textContent = ''; document.getElementById('result-hw-raw').style.display = 'none'; document.getElementById('result-hw-ai').style.display = 'none'; setPipe(1); }
+  document.getElementById('file-input-hw').value = '';
+  document.getElementById('mobile-input-hw').value = '';
+  updateExtractBtn();
+}
+
+async function extractHW() {
+  if(!hwFile) return;
+  const u = getUsage();
+  if(u.count >= DAILY_LIMIT) return;
+
+  const btn = document.getElementById('extract-btn-hw');
+  btn.disabled = true;
+  document.getElementById('result-hw-raw').style.display = 'none';
+  document.getElementById('result-hw-ai').style.display = 'none';
+  document.getElementById('prog-hw').style.display = 'block';
+  document.getElementById('pf-hw').style.width = '5%';
+
+  // STEP 1 — OCR
+  setPipe(2);
+  document.getElementById('status-hw').textContent = 'Step 1 of 2 — OCR reading your handwriting...';
+  let rawText = '';
+  try {
+    const fd = new FormData();
+    fd.append('file', hwFile);
+    fd.append('apikey', OCR_KEY);
+    fd.append('language', 'eng');
+    fd.append('isOverlayRequired', 'false');
+    fd.append('detectOrientation', 'true');
+    fd.append('scale', 'true');
+    fd.append('OCREngine', '2');
+    const res = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: fd });
+    if(!res.ok) throw new Error('OCR error ' + res.status);
+    const data = await res.json();
+    if(data.IsErroredOnProcessing) throw new Error(data.ErrorMessage || 'OCR failed');
+    rawText = data.ParsedResults.map(r => r.ParsedText).join('\n').trim();
+    document.getElementById('result-text-hw-raw').value = rawText || '(no text detected)';
+    document.getElementById('result-hw-raw').style.display = 'block';
+    document.getElementById('pf-hw').style.width = '50%';
+  } catch(e) {
+    document.getElementById('status-hw').textContent = 'OCR error: ' + e.message;
+    document.getElementById('prog-hw').style.display = 'none';
+    btn.disabled = false; updateExtractBtn(); return;
+  }
+
+  // STEP 2 — GROQ AI FIX
+  setPipe(3);
+  document.getElementById('status-hw').textContent = 'Step 2 of 2 — AI fixing spelling and missing letters...';
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_KEY },
+      body: JSON.stringify({
+        model: 'llama3-8b-8192',
+        max_tokens: 1024,
+        messages: [
+          { role: 'system', content: 'You are an OCR correction assistant. The user will give you raw text extracted from a handwritten image by an OCR engine. It may contain spelling mistakes, missing letters, garbled words, or OCR errors. Correct the text so it reads naturally and makes sense. Fix spelling, fill in obviously missing letters, and correct OCR artifacts. Keep the original meaning and structure. Only return the corrected text, nothing else — no explanations, no preamble.' },
+          { role: 'user', content: rawText || '(empty)' }
+        ]
+      })
+    });
+    if(!res.ok) { const err = await res.json(); throw new Error(err.error?.message || 'Groq error ' + res.status); }
+    const data = await res.json();
+    const fixed = data.choices[0]?.message?.content?.trim() || rawText;
+    document.getElementById('result-text-hw-ai').value = fixed;
+    document.getElementById('result-hw-ai').style.display = 'block';
+    document.getElementById('pf-hw').style.width = '100%';
+    setPipe(4);
+    incUsage();
+    document.getElementById('status-hw').textContent = 'Done — OCR read it, Groq fixed it.';
+  } catch(e) {
+    document.getElementById('status-hw').textContent = 'AI error: ' + e.message + ' — raw OCR result is still above.';
+    setPipe(1);
+  }
+
+  document.getElementById('prog-hw').style.display = 'none';
+  updateExtractBtn();
+}
+
+document.getElementById('file-input-hw').addEventListener('change', e => { if(e.target.files[0]) handleHWFile(e.target.files[0]); });
+document.getElementById('mobile-input-hw').addEventListener('change', e => { if(e.target.files[0]) handleHWFile(e.target.files[0]); });
+const uzHW = document.getElementById('uz-hw');
+uzHW.addEventListener('dragover', e => { e.preventDefault(); uzHW.style.borderColor='var(--orange)'; });
+uzHW.addEventListener('dragleave', () => { uzHW.style.borderColor=''; });
+uzHW.addEventListener('drop', e => { e.preventDefault(); uzHW.style.borderColor=''; if(e.dataTransfer.files[0]) handleHWFile(e.dataTransfer.files[0]); });
+const pzHW = document.getElementById('pz-hw');
+pzHW.addEventListener('click', () => pzHW.focus());
+pzHW.addEventListener('paste', e => { for(let i of e.clipboardData.items) { if(i.type.startsWith('image/')) { handleHWFile(i.getAsFile()); break; } }});
+pzHW.addEventListener('dragover', e => { e.preventDefault(); pzHW.classList.add('drag-over'); });
+pzHW.addEventListener('dragleave', () => pzHW.classList.remove('drag-over'));
+pzHW.addEventListener('drop', e => { e.preventDefault(); pzHW.classList.remove('drag-over'); if(e.dataTransfer.files[0]) handleHWFile(e.dataTransfer.files[0]); });
+
+// Global paste
+document.addEventListener('paste', e => {
+  const active = document.querySelector('.page.active').id;
+  for(let i of e.clipboardData.items) {
+    if(i.type.startsWith('image/')) {
+      if(active === 'page-main') handleMainFile(i.getAsFile());
+      else if(active === 'page-handwriting') handleHWFile(i.getAsFile());
+      break;
+    }
+  }
+});
+
+// ── COPY ─────────────────────────────────────────────────
+function copyResult(id) {
+  navigator.clipboard.writeText(document.getElementById(id).value);
+}
+
+// ── DINO ─────────────────────────────────────────────────
+const canvas = document.getElementById('dino-canvas');
+const ctx = canvas.getContext('2d');
+const W=680,H=180,GROUND=145,TEAL='#1abf8f';
+const scoreEl = document.getElementById('dino-score');
+let dino,obstacles,frame,score,speed,gameOver,started,animId;
+function initGame(){dino={x:60,y:GROUND,w:28,h:36,vy:0,jumps:0};obstacles=[];frame=0;score=0;speed=4;gameOver=false;started=false;scoreEl.textContent='Score: 0';drawIdle();}
+function drawIdle(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#1a1a1a';ctx.fillRect(0,0,W,H);ctx.strokeStyle='#2e2e2e';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,GROUND+dino.h);ctx.lineTo(W,GROUND+dino.h);ctx.stroke();drawDino(dino.x,GROUND);ctx.fillStyle='#555';ctx.font='14px system-ui';ctx.textAlign='center';ctx.fillText('Press Space or tap to start',W/2,80);}
+function drawDino(x,y){ctx.fillStyle=TEAL;ctx.fillRect(x,y,dino.w,dino.h);ctx.fillStyle='#000';ctx.fillRect(x+18,y+6,5,5);ctx.fillStyle=TEAL;ctx.fillRect(x+4,y+dino.h,7,8);ctx.fillRect(x+16,y+dino.h,7,8);}
+function drawObs(o){ctx.fillStyle='#e55';ctx.fillRect(o.x,GROUND+dino.h-o.h,o.w,o.h);ctx.fillStyle='#c33';ctx.fillRect(o.x,GROUND+dino.h-o.h,o.w,6);}
+function jump(){if(!started){started=true;loop();return;}if(gameOver){initGame();return;}if(dino.jumps<2){dino.vy=-11;dino.jumps++;}}
+function loop(){if(gameOver)return;animId=requestAnimationFrame(loop);frame++;score++;if(score%300===0)speed+=0.5;scoreEl.textContent='Score: '+score;dino.vy+=0.6;dino.y+=dino.vy;if(dino.y>=GROUND){dino.y=GROUND;dino.vy=0;dino.jumps=0;}if(frame%Math.max(60,90-Math.floor(score/200))===0){obstacles.push({x:W,w:18,h:Math.round(25+Math.random()*25)});}obstacles.forEach(o=>o.x-=speed);obstacles=obstacles.filter(o=>o.x+o.w>0);ctx.clearRect(0,0,W,H);ctx.fillStyle='#141414';ctx.fillRect(0,0,W,H);ctx.strokeStyle='#2e2e2e';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,GROUND+dino.h);ctx.lineTo(W,GROUND+dino.h);ctx.stroke();obstacles.forEach(o=>{drawObs(o);const dx=dino.x+4-o.x,dy=dino.y-(GROUND+dino.h-o.h);if(dx>0&&dx<dino.w-8+o.w-4&&dy<dino.h-4&&dy>-o.h){gameOver=true;ctx.fillStyle='#fff';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText('Game over — score: '+score,W/2,75);ctx.fillStyle='#888';ctx.font='13px system-ui';ctx.fillText('Press Space or tap to restart',W/2,100);cancelAnimationFrame(animId);}});if(!gameOver)drawDino(dino.x,dino.y);}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();jump();}});
+canvas.addEventListener('click',jump);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();jump();});
+initGame();
+</script>
+</body>
+</html>
